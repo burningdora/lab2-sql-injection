@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Вход</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 420px; margin: 40px auto; }
+    form { border: 1px solid #ccc; padding: 16px; margin-bottom: 24px; border-radius: 8px; }
+    input { display: block; width: 100%; padding: 8px; margin: 6px 0 12px; box-sizing: border-box; }
+    .err { color: #c00; font-size: 14px; }
+    h3.bad { color: #c00; } h3.good { color: #070; }
+  </style>
+</head>
+<body>
+  <p id="serverMsg" class="err"></p>
+
+  <!-- УЯЗВИМАЯ форма: только для демонстрации инъекции -->
+  <form action="/login-vulnerable" method="POST">
+    <h3 class="bad">Уязвимая форма (тест инъекции)</h3>
+    <label>Логин</label>
+    <input type="text" name="login">
+    <label>Пароль</label>
+    <input type="password" name="password">
+    <button type="submit">Войти</button>
+  </form>
+
+  <!-- ЗАЩИЩЁННАЯ форма -->
+  <form id="secureForm" action="/login" method="POST" novalidate>
+    <h3 class="good">Защищённая форма</h3>
+    <label>Логин</label>
+    <input type="text" name="login" id="login">
+    <label>Пароль</label>
+    <input type="password" name="password" id="password">
+    <div id="clientErr" class="err"></div>
+    <button type="submit">Войти</button>
+  </form>
+
+  <script>
+    // Сообщения от сервера (?error=...)
+    const params = new URLSearchParams(location.search);
+    const msgs = {
+      invalid: 'Недопустимые символы или длина в логине/пароле',
+      creds: 'Неверный логин или пароль',
+      '1': 'Неверный логин или пароль'
+    };
+    if (params.get('error')) {
+      document.getElementById('serverMsg').textContent = msgs[params.get('error')] || 'Ошибка';
+    }
+
+    // CLIENT-SIDE проверка защищённой формы
+    const LOGIN_RE = /^[A-Za-z0-9_]{3,20}$/;
+    document.getElementById('secureForm').addEventListener('submit', function (e) {
+      const login = document.getElementById('login').value.trim();
+      const pass = document.getElementById('password').value;
+      const err = document.getElementById('clientErr');
+      err.textContent = '';
+
+      if (!LOGIN_RE.test(login)) {
+        err.textContent = 'Логин: 3–20 символов, только латинские буквы, цифры и _';
+        e.preventDefault();
+        return;
+      }
+      if (pass.length < 6 || pass.length > 64) {
+        err.textContent = 'Пароль: от 6 до 64 символов';
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
